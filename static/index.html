@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extrator de Emolumentos</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glass-container">
+        <header>
+            <h1>Extrator de Emolumentos</h1>
+            <p>Upload e conversão da Tabela de Emolumentos para o Caixa-Pro</p>
+        </header>
+
+        <main>
+            <div id="drop-zone" class="drop-zone">
+                <span class="drop-icon">📄</span>
+                <p>Arraste o PDF aqui ou <strong>clique para selecionar</strong></p>
+                <input type="file" id="file-input" accept=".pdf" hidden>
+            </div>
+
+            <div id="loading-area" class="hidden">
+                <div class="spinner"></div>
+                <p>Processando PDF e aplicando OCR... Isso pode levar alguns minutos.</p>
+            </div>
+
+            <div id="result-area" class="hidden">
+                <div class="result-header">
+                    <h2>Resultado da Extração</h2>
+                    <button id="btn-publish" class="btn-primary">Publicar no Git</button>
+                </div>
+                <pre id="json-viewer"></pre>
+            </div>
+        </main>
+    </div>
+    
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

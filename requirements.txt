@@ -1,0 +1,8 @@
+pymupdf
+pillow
+pytesseract
+pandas
+openpyxl
+fastapi
+uvicorn
+python-multipart
