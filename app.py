@@ -105,25 +105,33 @@ def extrair_linhas_tabela(texto):
         if not linha:
             continue
 
-        valores = re.findall(r"(?:R\$)?\s?\d{1,3}(?:\.\d{3})*,\d{2}", linha)
+        # Encontrar a sequência final de valores (separados por espaços ou |)
+        match = re.search(r'(.*?)((?:[\s\|]*(?:R\$)?\s*\d{1,3}(?:\.\d{3})*,\d{2}[\s\|]*)+)$', linha)
+        
+        if match:
+            ato = match.group(1).strip()
+            # Limpar sujeira do nome do ato (ex: '| a |')
+            ato = ato.replace('|', '').strip()
+            ato = re.sub(r'\s+', ' ', ato) # Remove múltiplos espaços
+            
+            valores_finais = match.group(2)
+            valores_str = re.findall(r"(?:R\$)?\s?\d{1,3}(?:\.\d{3})*,\d{2}", valores_finais)
+            
+            if len(valores_str) >= 2 and len(ato) >= 2:
+                numeros = [valor_decimal(v) for v in valores_str]
 
-        if len(valores) >= 2:
-            ato = re.sub(r"(?:R\$)?\s?\d{1,3}(?:\.\d{3})*,\d{2}", "", linha).strip()
-
-            numeros = [valor_decimal(v) for v in valores]
-
-            atos.append({
-                "tipo_ato": ato,
-                "valores": {
-                    "emolumento": numeros[0] if len(numeros) > 0 else None,
-                    "iss": numeros[1] if len(numeros) > 1 else None,
-                    "fig_rcpn": numeros[2] if len(numeros) > 2 else None,
-                    "funjeam_extrajudicial": numeros[3] if len(numeros) > 3 else None,
-                    "selo_controle_fiscalizacao": numeros[4] if len(numeros) > 4 else None,
-                    "computacao": numeros[5] if len(numeros) > 5 else None,
-                    "total": numeros[-1] if len(numeros) > 0 else None
-                }
-            })
+                atos.append({
+                    "tipo_ato": ato,
+                    "valores": {
+                        "emolumento": numeros[0] if len(numeros) > 0 else None,
+                        "iss": numeros[1] if len(numeros) > 1 else None,
+                        "fig_rcpn": numeros[2] if len(numeros) > 2 else None,
+                        "funjeam_extrajudicial": numeros[3] if len(numeros) > 3 else None,
+                        "selo_controle_fiscalizacao": numeros[4] if len(numeros) > 4 else None,
+                        "computacao": numeros[5] if len(numeros) > 5 else None,
+                        "total": numeros[-1] if len(numeros) > 0 else None
+                    }
+                })
 
     return atos
 
