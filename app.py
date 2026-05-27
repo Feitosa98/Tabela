@@ -98,6 +98,7 @@ def detectar_desconto(texto):
 
 def extrair_linhas_tabela(texto):
     atos = []
+    padrao_moeda = r"(?:R\$)?\s?\d+(?:\.\d{3})*,\d{2}"
 
     for linha in texto.splitlines():
         linha = linha.strip()
@@ -105,33 +106,53 @@ def extrair_linhas_tabela(texto):
         if not linha:
             continue
 
-        # Encontrar a sequência final de valores (separados por espaços ou |)
-        match = re.search(r'(.*?)((?:[\s\|]*(?:R\$)?\s*\d{1,3}(?:\.\d{3})*,\d{2}[\s\|]*)+)$', linha)
+        matches = list(re.finditer(padrao_moeda, linha))
+        if len(matches) < 2:
+            continue
+            
+        valores = [valor_decimal(m.group()) for m in matches]
+        total = valores[-1]
         
-        if match:
-            ato = match.group(1).strip()
-            # Limpar sujeira do nome do ato (ex: '| a |')
-            ato = ato.replace('|', '').strip()
-            ato = re.sub(r'\s+', ' ', ato) # Remove múltiplos espaços
-            
-            valores_finais = match.group(2)
-            valores_str = re.findall(r"(?:R\$)?\s?\d{1,3}(?:\.\d{3})*,\d{2}", valores_finais)
-            
-            if len(valores_str) >= 2 and len(ato) >= 2:
-                numeros = [valor_decimal(v) for v in valores_str]
+        melhor_i = -1
+        menor_erro = float('inf')
+        
+        # Testa os últimos N itens como colunas
+        max_colunas = min(len(valores) - 1, 8)
+        
+        for i in range(len(valores) - 1, len(valores) - max_colunas - 2, -1):
+            if i < 0: break
+            soma = sum(valores[i:-1])
+            erro = abs(soma - total)
+            if erro < menor_erro:
+                menor_erro = erro
+                melhor_i = i
 
-                atos.append({
-                    "tipo_ato": ato,
-                    "valores": {
-                        "emolumento": numeros[0] if len(numeros) > 0 else None,
-                        "iss": numeros[1] if len(numeros) > 1 else None,
-                        "fig_rcpn": numeros[2] if len(numeros) > 2 else None,
-                        "funjeam_extrajudicial": numeros[3] if len(numeros) > 3 else None,
-                        "selo_controle_fiscalizacao": numeros[4] if len(numeros) > 4 else None,
-                        "computacao": numeros[5] if len(numeros) > 5 else None,
-                        "total": numeros[-1] if len(numeros) > 0 else None
-                    }
-                })
+        # Se o erro for muito alto (> 20% do total + 10 reais de gordura), fallback seguro
+        if total > 0 and menor_erro > (total * 0.2) + 10:
+            melhor_i = max(0, len(valores) - 7)
+            
+        colunas = matches[melhor_i:]
+        ato = linha[:matches[melhor_i].start()].strip()
+        
+        # Limpar sujeira do nome do ato
+        ato = ato.replace('|', '').replace('[', '').replace(']', '').strip()
+        ato = re.sub(r'\s+', ' ', ato) # Remove múltiplos espaços
+        
+        if len(colunas) >= 2 and len(ato) >= 2:
+            numeros = [valor_decimal(m.group()) for m in colunas]
+
+            atos.append({
+                "tipo_ato": ato,
+                "valores": {
+                    "emolumento": numeros[0] if len(numeros) > 0 else None,
+                    "iss": numeros[1] if len(numeros) > 1 else None,
+                    "fig_rcpn": numeros[2] if len(numeros) > 2 else None,
+                    "funjeam_extrajudicial": numeros[3] if len(numeros) > 3 else None,
+                    "selo_controle_fiscalizacao": numeros[4] if len(numeros) > 4 else None,
+                    "computacao": numeros[5] if len(numeros) > 5 else None,
+                    "total": numeros[-1] if len(numeros) > 0 else None
+                }
+            })
 
     return atos
 
